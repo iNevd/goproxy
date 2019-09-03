@@ -14,12 +14,14 @@ var listen string
 var cacheDir string
 var proxyHost string
 var excludeHost string
+var envPath string
 
 func init() {
 	flag.StringVar(&excludeHost, "exclude", "", "exclude host pattern")
 	flag.StringVar(&proxyHost, "proxy", "", "next hop proxy for go modules")
 	flag.StringVar(&cacheDir, "cacheDir", "", "go modules cache dir")
 	flag.StringVar(&listen, "listen", "0.0.0.0:8081", "service listen address")
+	flag.StringVar(&envPath, "path", "", "PATH ENV")
 	flag.Parse()
 
 	if os.Getenv("GIT_TERMINAL_PROMPT") == "" {
@@ -39,6 +41,11 @@ func init() {
 		os.Setenv("GOPROXY", proxyHost)
 	}
 	proxyHost = os.Getenv("GOPROXY")
+
+	if envPath != "" {
+		os.Setenv("PATH", envPath)
+	}
+	envPath = os.Getenv("PATH")
 }
 
 type responseLogger struct {
@@ -63,6 +70,9 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	if os.Getenv("PATH") != "" {
+		log.Printf("PATh %s\n", os.Getenv("PATH"))
+	}
 	if os.Getenv("GOPRIVATE") != "" {
 		log.Printf("ExcludeHost %s\n", os.Getenv("GOPRIVATE"))
 	}
