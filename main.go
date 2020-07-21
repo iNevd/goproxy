@@ -25,27 +25,33 @@ func init() {
 	flag.Parse()
 
 	if os.Getenv("GIT_TERMINAL_PROMPT") == "" {
-		os.Setenv("GIT_TERMINAL_PROMPT", "0")
+		errPanic(os.Setenv("GIT_TERMINAL_PROMPT", "0"))
 	}
 
 	if os.Getenv("GIT_SSH") == "" && os.Getenv("GIT_SSH_COMMAND") == "" {
-		os.Setenv("GIT_SSH_COMMAND", "ssh -o ControlMaster=no")
+		errPanic(os.Setenv("GIT_SSH_COMMAND", "ssh -o ControlMaster=no"))
 	}
 
 	if excludeHost != "" {
-		os.Setenv("GOPRIVATE", excludeHost)
+		errPanic(os.Setenv("GOPRIVATE", excludeHost))
 	}
 	excludeHost = os.Getenv("GOPRIVATE")
 
 	if proxyHost != "" {
-		os.Setenv("GOPROXY", proxyHost)
+		errPanic(os.Setenv("GOPROXY", proxyHost))
 	}
 	proxyHost = os.Getenv("GOPROXY")
 
 	if envPath != "" {
-		os.Setenv("PATH", envPath)
+		errPanic(os.Setenv("PATH", envPath))
 	}
 	envPath = os.Getenv("PATH")
+}
+
+func errPanic(err error, _ ... interface{}) {
+	if err != nil {
+		panic(err)
+	}
 }
 
 type responseLogger struct {
