@@ -75,6 +75,7 @@ func main() {
 
 	proxy := goproxy.New()
 	if cacheDir != "" {
+		log.Printf("cacheDir %s\n", cacheDir)
 		proxy.Cacher = &cacher.Disk{Root: cacheDir}
 	}
 	log.Fatal(http.ListenAndServe(addr, &logger{proxy}))
