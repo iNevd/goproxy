@@ -2,10 +2,10 @@ package main
 
 import (
 	"flag"
+	"github.com/goproxy/goproxy/cacher"
 	"log"
 	"net/http"
 	"os"
-	"path"
 	"time"
 
 	"github.com/goproxy/goproxy"
@@ -59,7 +59,6 @@ func main() {
 	if os.Getenv("HOME") != "" {
 		log.Printf("HOME %s\n", os.Getenv("HOME"))
 	}
-
 	if os.Getenv("PATH") != "" {
 		log.Printf("PATH %s\n", os.Getenv("PATH"))
 	}
