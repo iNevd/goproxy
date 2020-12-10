@@ -11,18 +11,12 @@ import (
 	"github.com/goproxy/goproxy"
 )
 
-var listen string
+var addr string
 var cacheDir string
-var proxyHost string
-var excludeHost string
-var envPath string
 
 func init() {
-	flag.StringVar(&excludeHost, "exclude", "", "exclude host pattern")
-	flag.StringVar(&proxyHost, "proxy", "", "next hop proxy for go modules")
 	flag.StringVar(&cacheDir, "cacheDir", "", "go modules cache dir")
-	flag.StringVar(&listen, "listen", "0.0.0.0:8081", "service listen address")
-	flag.StringVar(&envPath, "path", "", "PATH ENV")
+	flag.StringVar(&addr, "addr", "0.0.0.0:8081", "service listen address")
 	flag.Parse()
 
 	if os.Getenv("GIT_TERMINAL_PROMPT") == "" {
@@ -32,25 +26,6 @@ func init() {
 	if os.Getenv("GIT_SSH") == "" && os.Getenv("GIT_SSH_COMMAND") == "" {
 		errPanic(os.Setenv("GIT_SSH_COMMAND", "ssh -o ControlMaster=no"))
 	}
-
-	if os.Getenv("HOME") == "" {
-		errPanic(os.Setenv("HOME", path.Dir(os.Args[0])))
-	}
-
-	if excludeHost != "" {
-		errPanic(os.Setenv("GOPRIVATE", excludeHost))
-	}
-	excludeHost = os.Getenv("GOPRIVATE")
-
-	if proxyHost != "" {
-		errPanic(os.Setenv("GOPROXY", proxyHost))
-	}
-	proxyHost = os.Getenv("GOPROXY")
-
-	if envPath != "" {
-		errPanic(os.Setenv("PATH", envPath))
-	}
-	envPath = os.Getenv("PATH")
 }
 
 func errPanic(err error, _ ...interface{}) {
@@ -89,16 +64,19 @@ func main() {
 		log.Printf("PATH %s\n", os.Getenv("PATH"))
 	}
 	if os.Getenv("GOPRIVATE") != "" {
-		log.Printf("ExcludeHost %s\n", os.Getenv("GOPRIVATE"))
+		log.Printf("GOPRIVATE %s\n", os.Getenv("GOPRIVATE"))
 	}
 	if os.Getenv("GOPROXY") != "" {
-		log.Printf("ProxyHost %s\n", os.Getenv("GOPROXY"))
+		log.Printf("GOPROXY %s\n", os.Getenv("GOPROXY"))
 	}
 	if os.Getenv("GIT_SSH_COMMAND") != "" {
 		log.Printf("GIT_SSH_COMMAND %s\n", os.Getenv("GIT_SSH_COMMAND"))
 	}
-	log.Printf("Listen %s\n", listen)
+	log.Printf("addr %s\n", addr)
 
 	proxy := goproxy.New()
-	log.Fatal(http.ListenAndServe(listen, &logger{proxy}))
+	if cacheDir != "" {
+		proxy.Cacher = &cacher.Disk{Root: cacheDir}
+	}
+	log.Fatal(http.ListenAndServe(addr, &logger{proxy}))
 }
