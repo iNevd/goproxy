@@ -2,12 +2,13 @@ package main
 
 import (
 	"flag"
-	"github.com/goproxy/goproxy"
-	"github.com/goproxy/goproxy/cacher"
 	"log"
 	"net/http"
 	"os"
+	"path"
 	"time"
+
+	"github.com/goproxy/goproxy"
 )
 
 var listen string
@@ -32,6 +33,10 @@ func init() {
 		errPanic(os.Setenv("GIT_SSH_COMMAND", "ssh -o ControlMaster=no"))
 	}
 
+	if os.Getenv("HOME") == "" {
+		errPanic(os.Setenv("HOME", path.Dir(os.Args[0])))
+	}
+
 	if excludeHost != "" {
 		errPanic(os.Setenv("GOPRIVATE", excludeHost))
 	}
@@ -48,7 +53,7 @@ func init() {
 	envPath = os.Getenv("PATH")
 }
 
-func errPanic(err error, _ ... interface{}) {
+func errPanic(err error, _ ...interface{}) {
 	if err != nil {
 		panic(err)
 	}
@@ -76,8 +81,12 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	if os.Getenv("HOME") != "" {
+		log.Printf("HOME %s\n", os.Getenv("HOME"))
+	}
+
 	if os.Getenv("PATH") != "" {
-		log.Printf("PATh %s\n", os.Getenv("PATH"))
+		log.Printf("PATH %s\n", os.Getenv("PATH"))
 	}
 	if os.Getenv("GOPRIVATE") != "" {
 		log.Printf("ExcludeHost %s\n", os.Getenv("GOPRIVATE"))
@@ -91,6 +100,5 @@ func main() {
 	log.Printf("Listen %s\n", listen)
 
 	proxy := goproxy.New()
-	proxy.Cacher = &cacher.Disk{Root: cacheDir}
 	log.Fatal(http.ListenAndServe(listen, &logger{proxy}))
 }
