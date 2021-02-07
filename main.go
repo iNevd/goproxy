@@ -1,14 +1,16 @@
 package main
 
 import (
+	"context"
 	"flag"
+	"github.com/goproxy/goproxy"
 	"github.com/goproxy/goproxy/cacher"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
-
-	"github.com/goproxy/goproxy"
 )
 
 var addr string
@@ -56,6 +58,9 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	log.SetPrefix("goproxy: ")
+	log.SetFlags(0)
+
 	if os.Getenv("HOME") != "" {
 		log.Printf("HOME %s\n", os.Getenv("HOME"))
 	}
@@ -71,6 +76,10 @@ func main() {
 	if os.Getenv("GIT_SSH_COMMAND") != "" {
 		log.Printf("GIT_SSH_COMMAND %s\n", os.Getenv("GIT_SSH_COMMAND"))
 	}
+	if os.Getenv("GOCACHE") != "" {
+		log.Printf("GOCACHE %s\n", os.Getenv("GOCACHE"))
+	}
+
 	log.Printf("addr %s\n", addr)
 
 	proxy := goproxy.New()
@@ -78,5 +87,31 @@ func main() {
 		log.Printf("cacheDir %s\n", cacheDir)
 		proxy.Cacher = &cacher.Disk{Root: cacheDir}
 	}
-	log.Fatal(http.ListenAndServe(addr, &logger{proxy}))
+
+	var server = &http.Server{
+		Addr:              addr,
+		Handler:           &logger{proxy},
+		TLSConfig:         nil,
+		ReadTimeout:       0,
+		ReadHeaderTimeout: time.Second,
+	}
+	go func() {
+		if err := server.ListenAndServe(); err != nil {
+			if err != http.ErrServerClosed {
+				log.Fatal(err)
+			}
+		}
+	}()
+
+	s := make(chan os.Signal, 1)
+	signal.Notify(s, os.Interrupt, syscall.SIGTERM)
+	<-s
+	log.Println("Making a graceful shutdown...")
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+	err := server.Shutdown(ctx)
+	if err != nil {
+		log.Fatalf("Error while shutting down the server: %v", err)
+	}
+	log.Println("Successful server shutdown.")
 }
