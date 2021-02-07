@@ -59,7 +59,7 @@ func (l *logger) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 func main() {
 	log.SetPrefix("goproxy: ")
-	log.SetFlags(0)
+	log.SetFlags(log.LstdFlags)
 
 	if os.Getenv("HOME") != "" {
 		log.Printf("HOME %s\n", os.Getenv("HOME"))
